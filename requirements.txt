@@ -296,6 +296,8 @@ use docker PAT key as password
 	docker push <dockerhub-username>/program-6:latest
 	
 docker tag program-6 ghcr.io/<github-username>/program-6:latest
+
+export GITHUB_PAT=<your git pat key>
 echo $GITHUB_PAT | docker login ghcr.io -u <github-username> --password-stdin
 docker push ghcr.io/<github-username>/program-6:latest
 
