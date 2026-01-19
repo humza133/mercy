@@ -1,0 +1,564 @@
+Program-1/
+│
+├── Dockerfile
+├── requirements.txt
+└── app.py
+
+#Dockerfile
+
+	FROM python:3.9-slim
+
+	LABEL maintainer="student@rvce.edu.in"
+
+	WORKDIR /app
+
+	COPY requirements.txt .
+
+	RUN pip install --no-cache-dir -r requirements.txt
+
+	COPY . .
+
+
+	ENV FLASK_APP=app.py
+	ENV FLASK_RUN_HOST=0.0.0.0
+	ENV FLASK_RUN_PORT=5000
+
+	EXPOSE 5000
+
+	CMD ["flask", "run"]
+
+#app.py
+
+	from flask import Flask
+
+	app = Flask(__name__)
+
+	@app.route("/")
+	def hello():
+	    return "Hello, Docker!"
+
+	if __name__ == "__main__":
+	    app.run(host="0.0.0.0", port=5000)
+
+
+#requirements.txt
+	flask
+
+commands:- docker build -t program-1 .
+	   docker images
+	   docker run -d -p 5000:5000 --name flask-container program-1
+	   docker ps
+
+Open browser: http://localhost:5000
+
+docker stop flask-container
+docker rm flask-container
+
+
+Program-2/
+│
+├── Dockerfile
+├── package.json
+├── package-lock.json
+└── src/
+    └── index.js
+
+
+Dockerfile
+
+	FROM node:20-alpine AS builder
+
+	WORKDIR /app
+
+	COPY package.json package-lock.json ./
+
+	RUN npm install
+
+	COPY . .
+
+	RUN npm run build
+
+	FROM node:20-alpine
+
+	WORKDIR /app
+
+	COPY --from=builder /app/package.json ./
+	COPY --from=builder /app/package-lock.json ./
+	COPY --from=builder /app/dist ./dist
+	COPY --from=builder /app/node_modules ./node_modules
+
+	EXPOSE 3000
+
+	CMD ["node", "dist/index.js"]
+
+src/index.js
+
+	const express = require('express');
+	const app = express();
+	const PORT = 3000;
+
+	app.get('/', (req, res) => {
+	  res.send('Hello from multi-stage Docker!');
+	});
+
+	app.listen(PORT, () => {
+	  console.log(`Server running on port ${PORT}`);
+	});
+	
+package.json
+
+	{
+  "name": "program-2",
+  "version": "1.0.0",
+  "description": "A Node.js app with multi-stage Dockerfile",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "node dist/index.js",
+    "build": "mkdir -p dist && cp -r src/* dist/"
+  },
+  "author": "xyz",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^4.18.2"
+  }
+}
+
+npm install
+docker build -t program-2 .
+docker images
+docker run -it -p 3000:3000 program-2
+docker container ls -a
+docker container stop <container-id>
+docker container rm <container-id>
+docker image rm program-2
+
+
+Program-3/
+│
+├── Dockerfile
+├── requirements.txt
+└── app.py
+
+
+Dockerfile
+
+	FROM python:latest
+
+	WORKDIR /app
+
+	COPY requirements.txt .
+	RUN pip install --no-cache-dir -r requirements.txt
+
+	COPY . .
+
+	EXPOSE 5000
+
+	CMD ["python", "app.py"]
+
+app.py
+	from flask import Flask
+
+	app = Flask(__name__)
+
+	@app.route("/")
+	def home():
+	    return "Hello from Simple Flask Docker!"
+
+	if __name__ == "__main__":
+	    app.run(host="0.0.0.0", port=5000)
+
+requirements.txt
+	Flask==2.3.3
+
+docker build -t program-3 .
+docker images
+docker run -p 5000:5000 program-3
+docker container ls -a
+docker container stop <container-id>
+docker container rm <container-id>
+docker image rm program-3
+
+Program-4/
+├── Dockerfile
+├── index.js
+├── package.json
+├── package-lock.json
+
+index.js
+	const express = require("express");
+	const app = express();
+	const PORT = 3000;
+
+	app.get("/", (req, res) => {
+	  res.send("Hello from Git + Docker Integration!");
+	});
+
+	app.listen(PORT, () => {
+	  console.log(`Server running at http://localhost:${PORT}`);
+	});
+
+Dockerfile
+
+	FROM node:18 AS build
+	WORKDIR /app
+	COPY package*.json ./
+	RUN npm install
+	COPY . .
+
+	FROM node:18-slim
+	WORKDIR /app
+	COPY --from=build /app /app
+	EXPOSE 3000
+	CMD ["node", "index.js"]
+
+npm init -y
+
+npm install express
+
+docker build -t program-4 .
+
+docker run -p 3000:3000 program-4
+
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+
+git remote add origin https://github.com/<username>/<repo>.git
+
+git push -u origin main
+docker container ls -a
+docker container stop <container-id>
+docker container rm <container-id>
+docker image rm program-4
+
+
+Program-5/
+├── Dockerfile
+├── docker-compose.yml
+
+docker --version
+docker compose version
+
+Dockerfile
+
+	FROM jenkins/jenkins:lts
+
+	USER root
+	RUN apt-get update && apt-get install -y docker.io
+	USER jenkins
+	
+docker-compose.yml
+
+version: '3.8'
+
+services:
+  jenkins:
+    build: .
+    container_name: jenkins-ci
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - jenkins_home:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+
+volumes:
+  jenkins_home:
+
+
+docker compose up -d --build
+Get Initial Jenkins Password
+	docker exec -it jenkins-ci cat /var/jenkins_home/secrets/initialAdminPassword
+docker images
+docker compose down
+docker image rm program5-jenkins:latest
+
+Program-6/
+├── Dockerfile
+├── package.json
+├── package-lock.json
+├── node_modules/
+
+Dockerfile
+	FROM node:18
+	WORKDIR /app
+	COPY package*.json ./
+	RUN npm install
+	COPY . .
+	CMD ["node", "index.js"]
+
+npm init -y
+docker build -t program-6 .
+docker tag program-6 <dockerhub-username>/program-6:latest
+docker login -u <dockerhub-username>
+use docker PAT key as password
+	docker push <dockerhub-username>/program-6:latest
+	
+docker tag program-6 ghcr.io/<github-username>/program-6:latest
+echo $GITHUB_PAT | docker login ghcr.io -u <github-username> --password-stdin
+docker push ghcr.io/<github-username>/program-6:latest
+
+git init
+git add .
+git commit -m "Initial commit"
+git branch -M main
+git remote add origin https://github.com/<github-username>/program-6.git
+				or 
+git remote set-url origin https://github.com/<github-username>/program-6.git
+git push -u origin main
+
+
+Program-7/
+├── nginx-deployment.yaml
+
+minikube start
+minikube status
+
+if any error 
+	minikube delete
+	minikube start --driver=docker
+	
+mkdir program-7
+cd program-7
+
+nginx-deployment.yaml
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:latest
+          ports:
+            - containerPort: 80
+
+
+kubectl apply -f nginx-deployment.yaml
+kubectl get deployments
+kubectl get pods
+kubectl expose deployment nginx-deployment --type=NodePort --port=80
+kubectl get services
+minikube service nginx-deployment
+
+delete commands
+
+kubectl delete svc --all
+kubectl delete deployments --all
+
+
+Program-8/
+├── nodejs-configmap.yaml
+├── nodejs-pod.yaml
+├── server.js
+
+mkdir program-8
+cd program-8
+
+		server.js
+
+const http = require("http");
+const port = 3000;
+
+const server = http.createServer((req, res) => {
+  res.end("Hello from Node.js running inside Kubernetes!");
+});
+
+server.listen(port, () => {
+  console.log(`Server running at port ${port}`);
+});
+
+
+		nodejs-configmap.yaml
+
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nodejs-app-config
+data:
+  server.js: |
+    const http = require("http");
+    const port = 3000;
+
+    const server = http.createServer((req, res) => {
+      res.end("Hello from Node.js running inside Kubernetes!");
+    });
+
+    server.listen(port, () => {
+      console.log(`Server running at port ${port}`);
+    });
+
+
+		nodejs-pod.yaml
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nodejs-pod
+spec:
+  containers:
+    - name: nodejs
+      image: node:18
+      command: ["node", "/usr/src/app/server.js"]
+      volumeMounts:
+        - name: app-code
+          mountPath: /usr/src/app
+      ports:
+        - containerPort: 3000
+  volumes:
+    - name: app-code
+      configMap:
+        name: nodejs-app-config
+
+        
+
+kubectl apply -f nodejs-configmap.yaml
+kubectl apply -f nodejs-pod.yaml
+kubectl get pods
+kubectl port-forward pod/program-8 3000:3000
+
+delete commands
+kubectl delete pods --all
+kubectl delete svc --all
+kubectl delete deployments --all
+
+
+Program-9/
+├── namespaces.yaml
+├── pods.yaml
+
+		namespaces.yaml
+		
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: dev
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: prod
+
+
+		pods.yaml
+		
+apiVersion: v1
+kind: Pod
+metadata:
+  name: frontend-pod
+  namespace: dev
+  labels:
+    app: frontend
+    env: dev
+spec:
+  containers:
+    - name: frontend
+      image: nginx
+      ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: backend-pod
+  namespace: prod
+  labels:
+    app: backend
+    env: prod
+spec:
+  containers:
+    - name: backend
+      image: nginx
+      ports:
+        - containerPort: 80
+
+
+kubectl apply -f namespaces.yaml
+kubectl apply -f pods.yaml
+kubectl get pods -n dev
+kubectl get pods -n prod
+kubectl get pods
+kubectl get pods -n dev -l app=frontend
+kubectl get pods -n prod -l app=backend
+
+delete 
+	kubectl delete pods --all
+	kubectl delete svc --all
+
+
+Program-10/
+├── deployment.yaml
+├── service.yaml
+
+minikube start --cpus=2 --memory=4096
+
+minikube dashboard
+
+mkdir program-10
+cd program-10
+
+		deployment.yaml
+		
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: nginx
+  template:
+    metadata:
+      labels:
+        app: nginx
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+
+		service.yaml
+		
+apiVersion: v1
+kind: Service
+metadata:
+  name: nginx-service
+spec:
+  selector:
+    app: nginx
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 80
+  type: NodePort
+
+
+kubectl apply -f deployment.yaml
+kubectl apply -f service.yaml
+kubectl get pods
+kubectl get nodes
+kubectl get svc
+kubectl logs <pod-name>
+kubectl describe pod <pod-name>
+minikube service nginx-service
+minikube dashboard
+delete commands
+kubectl delete pods --all
+kubectl delete svc --all
+kubectl delete deployments --all
+
